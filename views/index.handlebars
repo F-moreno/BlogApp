@@ -1,0 +1,25 @@
+<div class="jumbotron">
+  <h1 class="display-4">Bem vindo ao meu Node BlogApp!</h1>
+  <p class="lead">Esse projeto foi desenvolvido com o intuito exclusivo de aprimorar meus conhecimentos com Node.js e Express.</p>
+  <hr class="my-4">
+  <p>Creditods de desenvolvimento para Victor Lima.</p>
+  <p>esse projeto pode ser encontrado em <a href=" https://www.youtube.com/@GuiadoProgramador">Guia do Programador</a></p>
+  <a class="btn btn-primary btn-lg" href="/usuarios/registro" role="button">Cadastrar</a>
+</div>
+
+<hr>
+<h2>Postagens recentes:</h2>
+{{#each postagens}}
+    <div class="card mt-4">
+        <div class="card-body">
+            <h3>{{titulo}}</h3>
+            <p>{{conteudo}}</p>
+            <a href="/postagem/{{slug}}"><button class="btn-success">Leia mais</button></a>
+            <hr>
+            <small>{{categoria.nome}}</small><br>
+            <small>Publicado em: {{data}}</small>
+        </div>
+    </div>
+{{else}}
+    <h5>Nenhuma postagem</h5>
+{{/each}}

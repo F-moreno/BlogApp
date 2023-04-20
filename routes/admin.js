@@ -2,18 +2,21 @@ const express = require('express')
 const router = express.Router()
 const mongoose = require('mongoose')
 require("../models/Categoria")
+require("../models/Postagem")
 const Categoria = mongoose.model("categorias") 
+const Postagem = mongoose.model("postagens")
+const {eAdmin} = require("../helpers/eAdmin")
 
 
-router.get('/', (req,res) => {
+router.get('/', eAdmin,(req,res) => {
     res.render("admin/index")
 })
 
-router.get('/posts', (req,res) => {
+router.get('/posts', eAdmin,(req,res) => {
     res.send("Post ADM")
 })
 
-router.get('/categorias', (req,res) => {
+router.get('/categorias', eAdmin,(req,res) => {
     Categoria.find().sort({date:'desc'}).lean().then((categorias)=>{
         res.render("admin/categorias",{categorias: categorias})
     }).catch((err)=>{
@@ -22,11 +25,11 @@ router.get('/categorias', (req,res) => {
     })
 })
 
-router.get('/categorias/add', (req,res) => {
+router.get('/categorias/add', eAdmin,(req,res) => {
     res.render("admin/addcategorias")
 })
 
-router.post('/categorias/nova', (req,res) => {
+router.post('/categorias/nova', eAdmin,(req,res) => {
     const data = req.body
     var erros = []
     
@@ -60,7 +63,9 @@ router.post('/categorias/nova', (req,res) => {
     
 })
 
-router.get("/categorias/edit/:id", (req,res) => {
+router.get("/categorias/edit/:id", eAdmin,(req,res) => {
+    
+
     Categoria.findOne({_id:req.params.id}).lean().then((categoria)=>{
         res.render("admin/editcategorias",{categoria: categoria})
     }).catch((err) =>{
@@ -69,7 +74,7 @@ router.get("/categorias/edit/:id", (req,res) => {
     })
 })
 
-router.post("/categorias/edit/:id", (req,res) =>{
+router.post("/categorias/edit/", eAdmin,(req,res) =>{
     const data = req.body
     var erros = []
     
@@ -85,8 +90,8 @@ router.post("/categorias/edit/:id", (req,res) =>{
     if(erros.length > 0){
         res.render("admin/addcategorias",{erros: erros})
     }else{
-
-        Categoria.findOneAndUpdate({_id:req.params.id},{
+        
+        Categoria.findOneAndUpdate({_id:data.id},{
             nome : data.nome,
             slug : data.slug
         }).then((categoria)=>{
@@ -99,13 +104,110 @@ router.post("/categorias/edit/:id", (req,res) =>{
     }
 })
 
-router.post("/categorias/deletar/:id",(req,res)=>{
-    Categoria.findOneAndRemove({_id: req.params.id}).then(()=>{
-        req.flash("success_msg","Categoria deletada")
+router.post("/categorias/deletar/:id",eAdmin,(req,res)=>{
+    Postagem.findOne({categoria:req.params.id}).then((postagem)=>{
+        if(postagem){
+            req.flash("error_msg","Existem postagens dependentes desta cateoria.")
+            req.flash("error_msg","Não foi possivel deletar categoria.")
+        }else{
+            Categoria.findOneAndRemove({_id: req.params.id}).then(()=>{
+                req.flash("success_msg","Categoria deletada")
+            }).catch((err)=>{
+                req.flash("error_msg","Erro ao deletar categoria.")
+            })
+        }
         res.redirect("/admin/categorias")
+    })
+})
+
+router.get("/postagens", eAdmin,(req,res)=>{
+    Postagem.find().populate("categoria").lean().sort({data:"desc"}).then((postagens)=>{
+        res.render("admin/postagens",{postagens:postagens})
     }).catch((err)=>{
-        req.flash("error_msg","Erro ao deletar categoria.")
-        res.redirect("/admin/categorias")
+        req.flash("error_msg","Erro ao listar postagens "+err)
+        res.redirect("/admin")
+    })
+    
+})
+
+router.get("/postagens/add",eAdmin,(req,res)=>{
+    Categoria.find().lean().then((categorias)=>{
+        res.render("admin/addpostagem",{categorias : categorias})
+    }).catch((err)=>{
+        req.flash("error_msg","Erro ao carregar categorias")
+    })
+    
+})
+
+router.post("/postagens/nova",eAdmin,(req,res)=>{
+    var erros = []
+    var data = req.body
+    if(data.categoria == "0"){
+        erros.push({text:"Categoria inválida"})
+    }
+
+    if(erros.length>0){
+        res.render("admin/addpostagem", {erros: erros})
+    }else{
+        const novaPostagem = {
+            titulo: data.titulo,
+            descricao: data.descricao,
+            conteudo: data.conteudo,
+            categoria: data.categoria,
+            slug: data.slug
+        }
+
+        new Postagem(novaPostagem).save().then(()=>{
+            req.flash("success_msg", "postagem criada com sucesso!")
+            res.redirect("/admin/postagens")
+        }).catch((err)=>{
+            req.flash("error_msg","Erro ao adicionar postagem")
+            res.redirect("/admin/postagens")
+        })
+    }
+})
+
+router.get("/postagens/edit/:id",eAdmin,(req,res)=>{
+
+    Postagem.findOne({_id:req.params.id}).lean().then((postagem)=>{
+        Categoria.find().lean().then((categorias)=>{
+            res.render("admin/editpostagens",{categorias:categorias, postagem:postagem})
+        }).catch((err)=>{
+            req.flash("error_msg", "Erro ao listar categorias.")
+            res.redirect("/admin/postagens")
+        })
+    }).catch((err)=>{
+        req.flash("error_msg","Erro ao carregar formulario de edição")
+        res.redirect("/admin/postagens")
+    })
+
+
+})
+
+router.post('/postagens/edit',eAdmin,(req,res)=>{
+    const data = req.body
+    Postagem.findOneAndUpdate({_id: data.id},{
+        titulo : data.titulo,
+        ug : data.slug,
+        descricao : data.descricao,
+        conteudo : data.conteudo,
+        categoria : data.categoria
+    }).then(()=>{
+        req.flash("success_msg", "Categoria editada.")
+        res.redirect("/admin/postagens")
+    }).catch((err)=>{
+        req.flash("error_msg", "Erro ao editar postagem."+err) 
+        res.redirect("/admin/postagens")
+    })
+})
+
+router.get("/postagens/deletar/:id",eAdmin,(req,res)=>{
+    Postagem.findByIdAndRemove({_id:req.params.id}).then(()=>{
+        req.flash("success_msg","Postagem deletada.")
+        res.redirect("/admin/postagens")
+    }).catch((err)=>{
+        req.flash("error_msg","Erro ao deletar postagem.")
+        res.redirect("/admin/postagens")
     })
 })
 

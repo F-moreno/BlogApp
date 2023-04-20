@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "bcryptjs": "^2.4.3",
     "bootstrap": "^5.3.0-alpha2",
     "connect-flash": "^0.1.1",
     "ejs": "^3.1.9",
@@ -9,6 +10,27 @@
     "mongo": "^0.1.0",
     "mongod": "^2.0.0",
     "mongoose": "^7.0.3",
-    "mongose": "^0.0.2-security"
-  }
+    "mongose": "^0.0.2-security",
+    "passport": "^0.6.0",
+    "passport-local": "^1.0.0"
+  },
+  "name": "blogapp",
+  "description": "Blog desenvolvido durante estudo - NodeJs",
+  "version": "1.0.0",
+  "main": "app.js",
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node app.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/F-moreno/BlogApp.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/F-moreno/BlogApp/issues"
+  },
+  "homepage": "https://github.com/F-moreno/BlogApp#readme"
 }
