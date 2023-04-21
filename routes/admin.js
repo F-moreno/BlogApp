@@ -3,8 +3,10 @@ const router = express.Router()
 const mongoose = require('mongoose')
 require("../models/Categoria")
 require("../models/Postagem")
+require("../models/Usuario")
 const Categoria = mongoose.model("categorias") 
 const Postagem = mongoose.model("postagens")
+const Usuario = mongoose.model("usuarios")
 const {eAdmin} = require("../helpers/eAdmin")
 
 
@@ -21,6 +23,15 @@ router.get('/categorias', eAdmin,(req,res) => {
         res.render("admin/categorias",{categorias: categorias})
     }).catch((err)=>{
         req.flash("error_msg", "Erro ao listar categorias")
+        res.redirect("/admin")
+    })
+})
+
+router.get('/usuarios', eAdmin,(req,res) => {
+    Usuario.find().lean().then((usuarios)=>{
+        res.render("admin/usuarios",{usuarios: usuarios})
+    }).catch((err)=>{
+        req.flash("error_msg", "Erro ao listar usuarios")
         res.redirect("/admin")
     })
 })
@@ -64,13 +75,20 @@ router.post('/categorias/nova', eAdmin,(req,res) => {
 })
 
 router.get("/categorias/edit/:id", eAdmin,(req,res) => {
-    
-
     Categoria.findOne({_id:req.params.id}).lean().then((categoria)=>{
         res.render("admin/editcategorias",{categoria: categoria})
     }).catch((err) =>{
         req.flash("error_msg","Categoria não encontrada.")
         res.redirect("/admin/categorias")
+    })
+})
+
+router.get("/usuarios/edit/:id", eAdmin,(req,res) => {
+        Usuario.findOne({_id:req.params.id}).lean().then((usuario)=>{
+        res.render("admin/editusuario",{usuario: usuario})
+    }).catch((err) =>{
+        req.flash("error_msg","Categoria não encontrada.")
+        res.redirect("/admin/usuarios")
     })
 })
 
@@ -117,6 +135,52 @@ router.post("/categorias/deletar/:id",eAdmin,(req,res)=>{
             })
         }
         res.redirect("/admin/categorias")
+    })
+})
+
+router.post("/usuarios/edit/", eAdmin,(req,res) =>{
+    const data = req.body
+    var erros = []
+    
+    if(!data.nome || typeof data.nome == undefined || data.nome == null){
+        erros.push({texto:"Nome inválido."})
+    }else if(data.nome.length < 3){
+        erros.push({texto: "Nome deve conter pelomenos 3 caracteres."})
+    }
+    if(!data.email || typeof data.email == undefined || data.email  == null){
+        erros.push({texto:"email inválido."})
+    }
+    
+    if(erros.length > 0){
+        res.render("admin/usuarios",{erros: erros})
+    }else{
+        
+        Usuario.findOneAndUpdate({_id:data.id},{
+            nome : data.nome,
+            email : data.email,
+            eAdmin: data.eAdmin?1:0
+        }).then((usuario)=>{
+                req.flash("success_msg", "Usuario editada.")
+                res.redirect("/admin/usuarios")
+        }).catch((err)=>{
+                req.flash("error_msg", "Erro interno ao editar usuario.")
+                res.redirect("/admin/usuarios")
+        })       
+    }
+})
+
+router.get("/usuarios/deletar/:id",eAdmin,(req,res)=>{
+    Usuario.findOne({usuario:req.params.id}).then((usuario)=>{
+        if(usuario){
+            req.flash("error_msg","Não foi possivel deletar usuário.")
+        }else{
+            Usuario.findOneAndRemove({_id: req.params.id}).then(()=>{
+                req.flash("success_msg","Usuário deletado")
+            }).catch((err)=>{
+                req.flash("error_msg","Erro ao deletar usuario.")
+            })
+        }
+        res.redirect("/admin/usuarios")
     })
 })
 
